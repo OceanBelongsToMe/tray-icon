@@ -208,7 +208,7 @@ impl TrayIcon {
     ) {
         if let Some(title) = title {
             unsafe {
-                let font_name = NSString::from_str("Menlo");
+                let font_name = NSString::from_str("Monaco");
                 let font: *mut NSFont =
                     msg_send![class!(NSFont), fontWithName: &*font_name, size: 14.0];
                 let key = NSString::from_str("NSFont");
