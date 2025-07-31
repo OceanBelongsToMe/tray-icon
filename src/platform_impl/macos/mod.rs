@@ -5,15 +5,17 @@
 mod icon;
 use std::cell::{Cell, RefCell};
 
-use objc2::rc::Retained;
-use objc2::{define_class, msg_send, AllocAnyThread, DeclaredClass, Message};
+use objc2::{class, define_class, msg_send, msg_send_id, AllocAnyThread, DeclaredClass, Message};
+use objc2::{rc::Retained, runtime::AnyObject};
 use objc2_app_kit::{
-    NSCellImagePosition, NSEvent, NSImage, NSMenu, NSStatusBar, NSStatusItem, NSTrackingArea,
-    NSTrackingAreaOptions, NSVariableStatusItemLength, NSView, NSWindow,
+    NSCellImagePosition, NSEvent, NSFont, NSImage, NSMenu, NSStatusBar, NSStatusItem,
+    NSTrackingArea, NSTrackingAreaOptions, NSVariableStatusItemLength, NSView, NSWindow,
 };
 use objc2_core_foundation::{CGPoint, CGRect, CGSize};
 use objc2_core_graphics::{CGDisplayPixelsHigh, CGMainDisplayID};
-use objc2_foundation::{MainThreadMarker, NSData, NSSize, NSString};
+use objc2_foundation::{
+    MainThreadMarker, NSAttributedString, NSData, NSDictionary, NSSize, NSString,
+};
 
 pub(crate) use self::icon::PlatformIcon;
 use crate::Error;
@@ -180,10 +182,57 @@ impl TrayIcon {
         title: Option<S>,
         mtm: MainThreadMarker,
     ) {
+        // if let Some(title) = title {
+        //     unsafe {
+        //         if let Some(button) = ns_status_item.button(mtm) {
+        //             button.setTitle(&NSString::from_str(title.as_ref()));
+        //         }
+        //     }
+        // }
+        Self::set_title_monospaced_digit_inner(ns_status_item, title, mtm);
+    }
+    // pub fn set_title_monospaced_digit<S: AsRef<str>>(&mut self, title: Option<S>) {
+    //     let title = title.map(|s| s.as_ref().to_string());
+    //     if let (Some(ns_status_item), Some(tray_target)) = (&self.ns_status_item, &self.tray_target)
+    //     {
+    //         Self::set_title_monospaced_digit_inner(ns_status_item, title.clone(), self.mtm);
+    //         tray_target.update_dimensions();
+    //     }
+    //     self.attrs.title = title;
+    // }
+
+    fn set_title_monospaced_digit_inner<S: AsRef<str>>(
+        ns_status_item: &NSStatusItem,
+        title: Option<S>,
+        mtm: MainThreadMarker,
+    ) {
         if let Some(title) = title {
             unsafe {
+                let font_name = NSString::from_str("Menlo");
+                let font: *mut NSFont =
+                    msg_send![class!(NSFont), fontWithName: &*font_name, size: 14.0];
+                let key = NSString::from_str("NSFont");
+
+                // Build the attribute dictionary using NSArray and NSDictionary
+                let keys: [&NSString; 1] = [key.as_ref()];
+                let font_ref: &NSFont = font.as_ref().expect("fontWithName returned null");
+                let objects: [&AnyObject; 1] = [font_ref];
+                let dict = NSDictionary::initWithObjects_forKeys_count(
+                    NSDictionary::alloc(),
+                    objects.as_ptr() as *mut _,
+                    keys.as_ptr() as *mut _,
+                    1,
+                );
+                let dict_ref: &NSDictionary<NSString, AnyObject> = &*(dict.as_ref()
+                    as *const NSDictionary<NSString, NSFont>
+                    as *const NSDictionary<NSString, AnyObject>);
+                let attr_string = NSAttributedString::initWithString_attributes(
+                    NSAttributedString::alloc(),
+                    &NSString::from_str(title.as_ref()),
+                    Some(dict_ref),
+                );
                 if let Some(button) = ns_status_item.button(mtm) {
-                    button.setTitle(&NSString::from_str(title.as_ref()));
+                    button.setAttributedTitle(attr_string.as_ref());
                 }
             }
         }
