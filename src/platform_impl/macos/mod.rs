@@ -208,7 +208,7 @@ impl TrayIcon {
     ) {
         if let Some(title) = title {
             unsafe {
-                let font = NSFont::monospacedDigitSystemFontOfSize_weight(12.0, 0.0);
+                let font = NSFont::monospacedDigitSystemFontOfSize_weight(14.0, 0.0);
                 let key = NSString::from_str("NSFont");
 
                 // Build the attribute dictionary using NSArray and NSDictionary
