@@ -5,7 +5,7 @@
 mod icon;
 use std::cell::{Cell, RefCell};
 
-use objc2::{class, define_class, msg_send, msg_send_id, AllocAnyThread, DeclaredClass, Message};
+use objc2::{define_class, msg_send, AllocAnyThread, DeclaredClass, Message};
 use objc2::{rc::Retained, runtime::AnyObject};
 use objc2_app_kit::{
     NSCellImagePosition, NSEvent, NSFont, NSImage, NSMenu, NSStatusBar, NSStatusItem,
@@ -208,15 +208,12 @@ impl TrayIcon {
     ) {
         if let Some(title) = title {
             unsafe {
-                let font_name = NSString::from_str("Monaco");
-                let font: *mut NSFont =
-                    msg_send![class!(NSFont), fontWithName: &*font_name, size: 14.0];
+                let font = NSFont::monospacedDigitSystemFontOfSize_weight(12.0, 0.0);
                 let key = NSString::from_str("NSFont");
 
                 // Build the attribute dictionary using NSArray and NSDictionary
                 let keys: [&NSString; 1] = [key.as_ref()];
-                let font_ref: &NSFont = font.as_ref().expect("fontWithName returned null");
-                let objects: [&AnyObject; 1] = [font_ref];
+                let objects: [&AnyObject; 1] = [font.as_ref()];
                 let dict = NSDictionary::initWithObjects_forKeys_count(
                     NSDictionary::alloc(),
                     objects.as_ptr() as *mut _,
